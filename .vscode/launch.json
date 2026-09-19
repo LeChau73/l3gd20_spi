@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "STM32F411 Debug (ST-Link Clone - OpenOCD 0.12)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/SPI1_LCD.elf",
+      "servertype": "openocd",
+      "svdFile": "${workspaceFolder}/STM32F411.svd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "serverArgs": [
+        "-c",
+        "init",
+        "-c",
+        "reset halt"
+      ],
+      //"showDevDebugOutput": "parsed",
+      "preLaunchTask": "Build all STM32F411",
+      "liveWatch": {
+        "enabled": true,
+        "samplesPerSecond": 4
+      }
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "cwd": "/home/chau/WorkSpace/STM32_WorkSpace/SPI1_LCD/Core/Src",
+      "program": "/home/chau/WorkSpace/STM32_WorkSpace/SPI1_LCD/Core/Src/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}

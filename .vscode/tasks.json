@@ -1,0 +1,35 @@
+// Name these taks the way you want
+// Configure command in make to use desired amount of threads (now 4)
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build all STM32F411",
+            "group": "build",
+            "type": "shell",
+            "command": "make",
+            "args": ["all", "-j4"]
+        },
+        {
+            "label": "Build clean STM32F411",
+            "group": "build",
+            "type": "shell",
+            "command": "make",
+            "args": ["clean"]
+        },
+        {
+            "label": "JFlash STM32F411",
+            "group": "build",
+            "type": "shell",
+            "command": "make",
+            "args": ["-j4","jflash"]
+        },
+        {
+            "label": "Build target mpu.c",
+            "group": "build",
+            "type": "shell",
+            "command": "make mpu",
+            "args": ["all", "-j4"]
+        },
+    ]
+}

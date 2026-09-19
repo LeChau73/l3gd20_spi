@@ -53,3 +53,25 @@ dkms.conf
 
 # debug information files
 *.dwo
+# Build outputs
+build/
+Debug/
+Release/
+
+# STM32CubeIDE workspace metadata
+.metadata/
+.settings/
+
+# Generated binaries and debug files
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.d
+*.o
+
+# Editor and OS files
+.vscode/*.log
+.DS_Store
+*~
