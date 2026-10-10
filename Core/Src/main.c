@@ -16,8 +16,7 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart2;
 
 /* Macro điều khiển chân Chip Select (CS) của Gyro onboard (PE3) */
-#define GYRO_CS_LOW()   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET)
-#define GYRO_CS_HIGH()  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET)
+
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -67,6 +66,8 @@ int func2(int var1_f2, int* var2_f2) {
   int adding = 5;
   int sum = var1_f2 + adding;
 
+  
+
   sum += *var2_f2;
 
   return sum;
@@ -84,64 +85,137 @@ void func1(int var1, int var2, char var3, int* var4) {
 
 }
 
+uint8_t flag_exti0 = 0;
+volatile uint16_t exti_pin = 0;
+volatile uint8_t  flag_exti = 0;
 
-int main(void) {
+void EXTI0_IRQHandler(void) {
 
-  // 
-  int va_pass = 6;
-  func1(5, 1, 2, &va_pass);
-  
+   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+   UART_PrintStr("\r\n=======EXTI0_IRQHandler Complete=======\r\n");
+   UART_PrintStr("\r\n=======Flag = {");
+   UART_PrintChar(flag_exti0);
+   UART_PrintStr("}---\r\n");
+
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(GPIO_Pin);
+  /* NOTE: This function Should not be modified, when the callback is needed,
+           the HAL_GPIO_EXTI_Callback could be implemented in the user file
+   */
+
+    exti_pin  = GPIO_Pin;
+  flag_exti = 1;
+  if (GPIO_Pin == GPIO_PIN_0) {
+      if(!flag_exti0)
+        flag_exti0 = 1;
+  }
 
 
 }
+
+
+void Init_EXTI0_ButtonUser(void) {
+  GPIO_InitTypeDef gpio = {0};
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+  gpio.Mode = GPIO_MODE_IT_RISING_FALLING;
+  gpio.Pull = GPIO_NOPULL;
+
+  gpio.Pin = GPIO_PIN_0;                 // Discovery / Black Pill
+  HAL_GPIO_Init(GPIOA, &gpio);
+
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+}
+
 
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
-//int main(void)
-//{
-//  /* Khởi tạo hệ thống HAL, Clock và Peripherals */
-//  HAL_Init();
-//  SystemClock_Config();
+int main(void)
+{
+  /* Khởi tạo hệ thống HAL, Clock và Peripherals */
+  HAL_Init();
+  SystemClock_Config();
+
+  MX_GPIO_Init();
+  MX_SPI1_Init();
+  MX_USART2_UART_Init();
+
+  HAL_Delay(200);
+
+
+  Init_EXTI0_ButtonUser();
+
+
+  UART_PrintStr("\033[2J\033[H"); // Clear terminal
+  //TODO: In ra tan so hien tai, va delay
+  UART_PrintStr("\r\n==================================\r\n");
+  UART_PrintStr("  STM32F411 DISCOVERY SPI TEST    \r\n");
+  UART_PrintStr("==================================\r\n");
+
+
+  ty_l3gd20 l3gd20;
+  l3gd20.protocol = SPI;
+
+  config_l3gd20(&l3gd20);
+
+  uint8_t data[2];
+
+  HAL_StatusTypeDef status = read_l3gd20(0x0F, 0, 1, data);
+
+  UART_PrintStr("Gyro WHO_AM_I: 0x");
+  UART_PrintStr(data);
+  UART_PrintStr("\r\n");
+
+
+
+  /* Đọc thanh ghi WHO_AM_I (0x0F) của L3GD20 / I3G4250D */
+  //uint8_t chip_id = Gyro_ReadRegister(0x0F);
 //
-//  MX_GPIO_Init();
-//  MX_SPI1_Init();
-//  MX_USART2_UART_Init();
+  //UART_PrintStr("Gyro WHO_AM_I: 0x");
+  //UART_PrintHex(chip_id);
+  //UART_PrintStr("\r\n");
+
+  /* Kiểm tra mã ID phản hồi */
+  //if (chip_id == 0xD4 || chip_id == 0xD3 || chip_id == 0xD7)
+  //{
+  //  UART_PrintStr("[RESULT] -> SPI Communication SUCCESS!\r\n");
+  //}
+  //else
+  //{
+  //  UART_PrintStr("[RESULT] -> SPI Communication FAILED!\r\n");
+  //  UART_PrintStr("(Check SPI clock/mode or CS pin config)\r\n");
+  //}
 //
-//  HAL_Delay(200);
-//
-//  UART_PrintStr("\r\n==================================\r\n");
-//  UART_PrintStr("  STM32F411 DISCOVERY SPI TEST    \r\n");
-//  UART_PrintStr("==================================\r\n");
-//
-//  /* Đọc thanh ghi WHO_AM_I (0x0F) của L3GD20 / I3G4250D */
-//  uint8_t chip_id = Gyro_ReadRegister(0x0F);
-//
-//  UART_PrintStr("Gyro WHO_AM_I: 0x");
-//  UART_PrintHex(chip_id);
-//  UART_PrintStr("\r\n");
-//
-//  /* Kiểm tra mã ID phản hồi */
-//  if (chip_id == 0xD4 || chip_id == 0xD3 || chip_id == 0xD7)
-//  {
-//    UART_PrintStr("[RESULT] -> SPI Communication SUCCESS!\r\n");
-//  }
-//  else
-//  {
-//    UART_PrintStr("[RESULT] -> SPI Communication FAILED!\r\n");
-//    UART_PrintStr("(Check SPI clock/mode or CS pin config)\r\n");
-//  }
-//
-//  /* Vòng lặp chính */
-//  while (1)
-//  {
-//    // Nháy LED Green (PD12) báo hiệu hệ thống hoạt động
-//    HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-//    HAL_Delay(500);
-//  }
-//}
+  /* Vòng lặp chính */
+  int count = 10U;
+  while (1)
+  {
+    // Nháy LED Green (PD12) báo hiệu hệ thống hoạt động
+      if (flag_exti) {
+            flag_exti = 0;
+      if (exti_pin == GPIO_PIN_0)  UART_PrintStr("PA0 changed\r\n");
+      }
+    
+    if (flag_exti0)
+    {
+      count = 10;
+    }
+
+    if (count == 0)
+    {
+      flag_exti0 = 0;
+    }
+    
+
+  }
+}
 
 /**
   * @brief System Clock Configuration (HSI 16MHz)
@@ -272,27 +346,6 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
-/* ------------------ Utility Functions cho UART ------------------ */
-
-void UART_PrintChar(char c)
-{
-  HAL_UART_Transmit(&huart2, (uint8_t *)&c, 1, HAL_MAX_DELAY);
-}
-
-void UART_PrintStr(const char *str)
-{
-  while (*str)
-  {
-    UART_PrintChar(*str++);
-  }
-}
-
-void UART_PrintHex(uint8_t num)
-{
-  char hex_chars[] = "0123456789ABCDEF";
-  UART_PrintChar(hex_chars[(num >> 4) & 0x0F]);
-  UART_PrintChar(hex_chars[num & 0x0F]);
-}
 
 void Error_Handler(void)
 {

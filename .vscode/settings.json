@@ -59,6 +59,6 @@
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
-  "cortex-debug.variableUseNaturalFormat": true,
+  "cortex-debug.variableUseNaturalFormat": false,
   "cmake.sourceDirectory": "/home/chau/WorkSpace/STM32_WorkSpace/SPI1_LCD/Drivers/CMSIS/NN"
 }
