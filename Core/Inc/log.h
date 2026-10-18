@@ -6,6 +6,7 @@ void UART_PrintChar(char c);
 void UART_PrintStr(const char *str);
 void UART_PrintHex(uint8_t num);
 void UART_PrintRegister(uint32_t reg);
+void UART_PrintHexMutilple(const char *str, uint8_t size);
 
 #endif
 

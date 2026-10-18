@@ -7,7 +7,7 @@
 
 #define OK          0
 #define ERROR      (-1)
-
+#define DEBUG_SPI   1
 
 
 //SPI

@@ -27,15 +27,13 @@ static void MX_USART2_UART_Init(void);
 void UART_PrintChar(char c);
 void UART_PrintStr(const char *str);
 void UART_PrintHex(uint8_t num);
-uint8_t Gyro_ReadRegister(uint8_t reg);
 
 /* Private user code ---------------------------------------------------------*/
 
-/**
-  * @brief  Hàm đọc 1 thanh ghi từ cảm biến L3GD20 qua SPI1
-  * @param  reg Địa chỉ thanh ghi cần đọc (vd: 0x0F)
-  * @retval Giá trị đọc được từ thanh ghi
-  */
+uint8_t flag_exti0 = 0;
+volatile uint16_t exti_pin = 0;
+uint8_t  flag_exti = 0;
+
 uint8_t Gyro_ReadRegister(uint8_t reg)
 {
   uint8_t txData[2];
@@ -59,36 +57,6 @@ uint8_t Gyro_ReadRegister(uint8_t reg)
   return rxData[1]; // Byte thứ 2 là dữ liệu cảm biến phản hồi
 }
 
-int* a;
-
-int func2(int var1_f2, int* var2_f2) {
-  
-  int adding = 5;
-  int sum = var1_f2 + adding;
-
-  
-
-  sum += *var2_f2;
-
-  return sum;
-
-}
-
-void func1(int var1, int var2, char var3, int* var4) {
-
-  int sum_cal;
-
-
-  sum_cal = func2(var1, var4);
-
-  sum_cal += 2;
-
-}
-
-uint8_t flag_exti0 = 0;
-volatile uint16_t exti_pin = 0;
-volatile uint8_t  flag_exti = 0;
-
 void EXTI0_IRQHandler(void) {
 
    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
@@ -101,13 +69,9 @@ void EXTI0_IRQHandler(void) {
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  /* Prevent unused argument(s) compilation warning */
   UNUSED(GPIO_Pin);
-  /* NOTE: This function Should not be modified, when the callback is needed,
-           the HAL_GPIO_EXTI_Callback could be implemented in the user file
-   */
 
-    exti_pin  = GPIO_Pin;
+  exti_pin  = GPIO_Pin;
   flag_exti = 1;
   if (GPIO_Pin == GPIO_PIN_0) {
       if(!flag_exti0)
@@ -120,8 +84,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void Init_EXTI0_ButtonUser(void) {
   GPIO_InitTypeDef gpio = {0};
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-  gpio.Mode = GPIO_MODE_IT_RISING_FALLING;
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  gpio.Mode = GPIO_MODE_IT_RISING;
   gpio.Pull = GPIO_NOPULL;
 
   gpio.Pin = GPIO_PIN_0;                 // Discovery / Black Pill
@@ -132,6 +96,13 @@ void Init_EXTI0_ButtonUser(void) {
 }
 
 
+void SPI1_IRQHandler(void) {
+  HAL_SPI_IRQHandler(&hspi1);
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
+  UART_PrintStr("\r\n=======SPI ERROR=======\r\n");
+}
 
 /**
   * @brief  The application entry point.
@@ -142,14 +113,10 @@ int main(void)
   /* Khởi tạo hệ thống HAL, Clock và Peripherals */
   HAL_Init();
   SystemClock_Config();
-
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_USART2_UART_Init();
-
   HAL_Delay(200);
-
-
   Init_EXTI0_ButtonUser();
 
 
@@ -167,51 +134,36 @@ int main(void)
 
   uint8_t data[2];
 
-  HAL_StatusTypeDef status = read_l3gd20(0x0F, 0, 1, data);
+    /* Đọc thanh ghi WHO_AM_I (0x0F) của L3GD20 / I3G4250D */
 
-  UART_PrintStr("Gyro WHO_AM_I: 0x");
-  UART_PrintStr(data);
-  UART_PrintStr("\r\n");
+  //0b11010100 ~ 
+  uint8_t retry = 1;
+  do
+  {
+    HAL_StatusTypeDef status = read_l3gd20(0x0F, 0, 1, data);
+    if (status == HAL_OK)
+    {
+      if(data[0] == 0b11010100) {
+        UART_PrintStr("Correct ^-^ Gyro WHO_AM_I: 0x");
+        UART_PrintStr(data);
+        UART_PrintStr("\r\n");
+        retry = 0;
+      } else {
+        UART_PrintStr("InCorrect -_- Gyro WHO_AM_I 0x");
+        UART_PrintHex(data[0]);
+        UART_PrintStr("\r\n");
+      }
+    } else {
+      UART_PrintStr("Fail read l3gd20\n");
+    }
+    HAL_Delay(5000);
+  } while (retry);
+  
 
-
-
-  /* Đọc thanh ghi WHO_AM_I (0x0F) của L3GD20 / I3G4250D */
-  //uint8_t chip_id = Gyro_ReadRegister(0x0F);
-//
-  //UART_PrintStr("Gyro WHO_AM_I: 0x");
-  //UART_PrintHex(chip_id);
-  //UART_PrintStr("\r\n");
-
-  /* Kiểm tra mã ID phản hồi */
-  //if (chip_id == 0xD4 || chip_id == 0xD3 || chip_id == 0xD7)
-  //{
-  //  UART_PrintStr("[RESULT] -> SPI Communication SUCCESS!\r\n");
-  //}
-  //else
-  //{
-  //  UART_PrintStr("[RESULT] -> SPI Communication FAILED!\r\n");
-  //  UART_PrintStr("(Check SPI clock/mode or CS pin config)\r\n");
-  //}
-//
   /* Vòng lặp chính */
   int count = 10U;
   while (1)
   {
-    // Nháy LED Green (PD12) báo hiệu hệ thống hoạt động
-      if (flag_exti) {
-            flag_exti = 0;
-      if (exti_pin == GPIO_PIN_0)  UART_PrintStr("PA0 changed\r\n");
-      }
-    
-    if (flag_exti0)
-    {
-      count = 10;
-    }
-
-    if (count == 0)
-    {
-      flag_exti0 = 0;
-    }
     
 
   }
@@ -277,6 +229,10 @@ static void MX_SPI1_Init(void)
   {
     Error_Handler();
   }
+
+
+  HAL_NVIC_SetPriority(SPI1_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(SPI1_IRQn);
 }
 
 /**

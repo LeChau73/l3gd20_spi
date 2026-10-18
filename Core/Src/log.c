@@ -18,6 +18,14 @@ void UART_PrintStr(const char *str)
   }
 }
 
+void UART_PrintHexMutilple(const char *str, uint8_t size)
+{
+  while (size--)
+  {
+    UART_PrintHex( *str++ );
+  }
+}
+
 void UART_PrintHex(uint8_t num)
 {
   char hex_chars[] = "0123456789ABCDEF";
@@ -39,4 +47,8 @@ void UART_PrintRegister(volatile uint32_t reg) {
     }
                                                   
     UART_PrintStr("\n");
+}
+
+int __io_putchar(int ch) {
+  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
 }
