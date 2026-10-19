@@ -104,6 +104,30 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
   UART_PrintStr("\r\n=======SPI ERROR=======\r\n");
 }
 
+
+
+static void DumpClockSystemAndSyTick() {
+  
+  printf("Clock System = %d\n", SystemCoreClock);
+  printf("Frequence of systick = ");
+  switch (HAL_GetTickFreq())
+  {
+  case HAL_TICK_FREQ_10HZ:
+    printf("10HZ => T = 0,1s \n");
+    break;
+  case HAL_TICK_FREQ_100HZ:
+    printf("100HZ => T = 0,01s \n");
+    break;
+  case HAL_TICK_FREQ_1KHZ:
+    printf("1000HZ => T = 1ms \n");
+    break;
+  default:
+    break;
+  }
+}
+
+
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -118,9 +142,22 @@ int main(void)
   MX_USART2_UART_Init();
   HAL_Delay(200);
   Init_EXTI0_ButtonUser();
-
-
   UART_PrintStr("\033[2J\033[H"); // Clear terminal
+
+  UART_PrintStr("\r\n==================================\r\n");
+  UART_PrintStr("  STM32F411 INIT    \r\n");
+  UART_PrintStr("==================================\r\n");
+  DumpClockSystemAndSyTick();
+  uint16_t current_tick = HAL_GetTick();
+  printf("First Systick = %d\n", current_tick);
+  while (HAL_GetTick() - current_tick < 1000);
+  printf("End Systick = %d\n", HAL_GetTick());
+
+
+
+
+  
+
   //TODO: In ra tan so hien tai, va delay
   UART_PrintStr("\r\n==================================\r\n");
   UART_PrintStr("  STM32F411 DISCOVERY SPI TEST    \r\n");
