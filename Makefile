@@ -36,6 +36,7 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/app_l3gd20.c \
 Core/Src/main.c \
 Core/Src/l3gd20.c \
 Core/Src/spi.c \

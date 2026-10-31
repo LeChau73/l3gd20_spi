@@ -4,7 +4,7 @@
 extern SPI_HandleTypeDef hspi1;
 
 
-int spi_write(uint8_t* data, uint16_t size,  uint8_t timeout) {
+int spi_write(uint8_t* data, uint16_t size,  uint16_t timeout) {
 #if(DEBUG_SPI)
     printf("File spi.c, func: spi_write : ");
     fflush(stdout);
@@ -30,10 +30,10 @@ int spi_write(uint8_t* data, uint16_t size,  uint8_t timeout) {
 }
 
 
-int spi_read(uint8_t* buff_data, uint16_t size, uint8_t timeout) {
+int spi_read(uint8_t* buff_data, uint16_t size, uint16_t timeout) {
     uint8_t index = 0;
     uint32_t first_tick = HAL_GetTick();
-    uint32_t current_tick;
+    uint32_t current_tick = 0;
 
     // Check SPI is enable ?
     if( ( hspi1.Instance->CR1 & ( 0x1 << 6 ) ) == 0 ) 
@@ -47,14 +47,15 @@ int spi_read(uint8_t* buff_data, uint16_t size, uint8_t timeout) {
     while (size--)
     {
         // RXE = 1 (not empty) & cannot > timeout  // Block when RXE = 0 (empty)
+        //TODO: check condition
         while ( ( !( ( hspi1.Instance->SR & 0x1 ) == 1 ) ) && ( current_tick < timeout ) ) {
             current_tick =  HAL_GetTick() - first_tick;
         }
 
         if ( current_tick > timeout  ) {
-#if(DEBUG_SPI)
-    printf("SPI READ TIMEOUT : TimeWait = %d , Time Actual Wait = %d \n", timeout, current_tick );
-#endif
+
+            printf("SPI READ TIMEOUT : TimeWait = %d , Time Actual Wait = %d \n", timeout, current_tick );
+            printf("Bit RXE = %d | | %s \n", (uint8_t)hspi1.Instance->SR & 0x1, ( ((uint8_t)hspi1.Instance->SR & 0x1) == 0 ) ? "DR empty data" : "DR has data" );
             return HAL_TIMEOUT;
         }
 
@@ -65,8 +66,8 @@ int spi_read(uint8_t* buff_data, uint16_t size, uint8_t timeout) {
 #endif
 
         index++;
-
     }
+
 #if(DEBUG_SPI)
     printf("File spi.c, func: spi_read :Result read data = ");
     for (int i = 0; i < index; i++)

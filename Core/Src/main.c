@@ -160,37 +160,8 @@ int main(void)
   UART_PrintStr("==================================\r\n");
 
 
-  ty_l3gd20 l3gd20;
-  l3gd20.protocol = SPI;
-
-  config_l3gd20(&l3gd20);
-
-  uint8_t data[2];
-
-    /* Đọc thanh ghi WHO_AM_I (0x0F) của L3GD20 / I3G4250D */
-
-  //0b11010100 ~ 
-  uint8_t retry = 1;
-  do
-  {
-    uint8_t count = 0;
-    printf("----------Readding Gyro WHO_AM_I: [%d] ----------\n", count++);
-    HAL_StatusTypeDef status = read_l3gd20(0x0F, 0, 1, data);
-    if (status == HAL_OK)
-    {
-      if(data[0] == 0xD3) {
-        printf("Correct ^-^ Gyro WHO_AM_I: 0x%x\n", data[0]);
-        retry = 0;
-      } else {
-        printf("In Correct -_- Gyro WHO_AM_I: 0x%x\n", data);
-      }
-    } else {
-      UART_PrintStr("Fail read l3gd20\n");
-    }
-    HAL_Delay(5000);
-  } while (retry);
-
-  
+  Read_Gyro_WHO_AM_I();
+  TC_Write_Single_mode_CTRL_REG3_22H();
 
   /* Vòng lặp chính */
   int count = 10U;

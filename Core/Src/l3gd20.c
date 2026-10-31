@@ -7,7 +7,7 @@ static ty_l3gd20* l3gd20_Config_Internal = NULL;
 static uint8_t write_cache[10];
 static uint8_t read_cache_buff[10];
 
-#define DEBUG_L3GD20 1 
+#define DEBUG_L3GD20 0
 
 
 int config_l3gd20(ty_l3gd20* l3gd20) {
@@ -103,6 +103,66 @@ int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t*
     return HAL_OK;
 }
 
+uint8_t read1byte_l3gd20(uint8_t register_add) {
+    // 1. Prepare data
+     //Bit0 : R/W mode
+    uint8_t cmd[2] = {0x00, 0xFF};
+    uint8_t data_reciver;
+
+    cmd[0] |= 0x80; // READMODE , BIT 7 = 1
+
+    // Address of register
+    cmd[0] |= (register_add & 0x3F);
+
+    // pull CS
+    GYRO_CS_LOW();
+
+    /* Request to sensor */
+    spi_write(&cmd[0], 1, 100);
+    spi_read(&data_reciver, 1, 100);
+
+    data_reciver = 0;
+
+    /* Read Actual Data */
+    spi_write(&cmd[1], 1, 1000);
+    spi_read(&data_reciver, 1, 100);
+
+    GYRO_CS_HIGH();
+
+    return data_reciver;
+}
 
 
+HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t size, uint16_t* data_write) {
 
+    /* [1 byte : medata] + [ data ] */
+    /* Note: Data of user should be MSB first */
+
+    // Check input value is valid
+    //TODO: macro
+
+    uint8_t buffer[10] = {0};
+    uint8_t length_to_Send = 0;
+
+    if (mode == MUTILPLE_MODE)
+        buffer[0] |= 0x40;                                  // MUTIPLE MODE , BIT 6 = 1
+
+    buffer[0] |= (address_register & 0x3F);                 // add more
+
+    memcpy(buffer + 1, data_write, size);                   // copy 
+
+
+    length_to_Send = ( mode == SINGLE_MODE ) ? 2 : ( size + 1 );
+    
+    for (size_t i = 0; i < length_to_Send; i++)
+    {
+        if (spi_write(buffer, 1, 1000) == ERROR)
+        {
+            printf("Cannot pheripheral spi write \n");
+            return HAL_BUSY;
+        }
+        
+    }
+
+    HAL_OK;
+}
