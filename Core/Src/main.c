@@ -154,10 +154,6 @@ int main(void)
   printf("End Systick = %d\n", HAL_GetTick());
 
 
-
-
-  
-
   //TODO: In ra tan so hien tai, va delay
   UART_PrintStr("\r\n==================================\r\n");
   UART_PrintStr("  STM32F411 DISCOVERY SPI TEST    \r\n");
@@ -177,24 +173,23 @@ int main(void)
   uint8_t retry = 1;
   do
   {
+    uint8_t count = 0;
+    printf("----------Readding Gyro WHO_AM_I: [%d] ----------\n", count++);
     HAL_StatusTypeDef status = read_l3gd20(0x0F, 0, 1, data);
     if (status == HAL_OK)
     {
-      if(data[0] == 0b11010100) {
-        UART_PrintStr("Correct ^-^ Gyro WHO_AM_I: 0x");
-        UART_PrintStr(data);
-        UART_PrintStr("\r\n");
+      if(data[0] == 0xD3) {
+        printf("Correct ^-^ Gyro WHO_AM_I: 0x%x\n", data[0]);
         retry = 0;
       } else {
-        UART_PrintStr("InCorrect -_- Gyro WHO_AM_I 0x");
-        UART_PrintHex(data[0]);
-        UART_PrintStr("\r\n");
+        printf("In Correct -_- Gyro WHO_AM_I: 0x%x\n", data);
       }
     } else {
       UART_PrintStr("Fail read l3gd20\n");
     }
     HAL_Delay(5000);
   } while (retry);
+
   
 
   /* Vòng lặp chính */

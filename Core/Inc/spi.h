@@ -9,7 +9,6 @@
 #define ERROR      (-1)
 #define DEBUG_SPI   1
 
-
 //SPI
 int spi_write(uint8_t* data, uint16_t size,  uint8_t timeout);
 int spi_read(uint8_t* buff_data, uint16_t size, uint8_t timeout);

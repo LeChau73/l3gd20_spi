@@ -7,6 +7,8 @@ static ty_l3gd20* l3gd20_Config_Internal = NULL;
 static uint8_t write_cache[10];
 static uint8_t read_cache_buff[10];
 
+#define DEBUG_L3GD20 1 
+
 
 int config_l3gd20(ty_l3gd20* l3gd20) {
 
@@ -37,12 +39,13 @@ int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t*
 
     uint8_t Timeout = 100; //100ms
     uint8_t number_byte_send;
+    HAL_StatusTypeDef status;
 
     ty_l3gd20 config = *l3gd20_Config_Internal;
 
     // 1. Prepare data
      //Bit0 : R/W mode
-    uint8_t cmd[3] = {0x00, 0xFF, 0xFF};
+    uint8_t cmd[2] = {0x00, 0xFF};
 
 
     cmd[0] |= 0x80; // READMODE , BIT 7 = 1
@@ -54,20 +57,42 @@ int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t*
     // Address of register
     cmd[0] |= (register_add & 0x3F);
 
-#if(DEBUG_L3GD20)
-    UART_PrintStr("File L3gd20.c: cmd[2] = ");
-    UART_PrintHex(cmd[2]);
-    UART_PrintChar('\n');
-#endif
-    number_byte_send = (read_mode == MUTILPLE_MODE ) ? 3 : 2;
+    number_byte_send = (read_mode == MUTILPLE_MODE ) ? 2 : 1;
 
     switch (config.protocol)
     {
     case SPI:
         // pull CS
         GYRO_CS_LOW();
-        spi_write(&cmd[0], number_byte_send, Timeout);
-        spi_read(buff_data, size, Timeout);
+
+        /* Request to sensor */
+        spi_write(&cmd[0], 1, Timeout);
+        spi_read(buff_data, 1, Timeout);
+        memset(buff_data, 0x00, 1);
+
+        /* Read Actual Data */
+        uint8_t i;
+        for (i = 0; i < number_byte_send; i++)
+        {
+            status = spi_write(&cmd[1], 1, Timeout);
+            status = spi_read(buff_data+i, 1, Timeout);
+        }
+
+        if(status != HAL_OK) {
+            printf("Fail Read Write\n");
+            return status;
+        }
+        
+        buff_data[i] = '\0'; 
+
+#if(DEBUG_L3GD20)
+    //TODO: DEBUG tai sao k break dduwocj line printf
+    printf("File l3gd20.c, func: Result read from [%s] = ", find_name_reister( table_l3gd20_register, register_add ));
+    fflush(stdout);
+    UART_PrintHexMutilple(buff_data, number_byte_send);
+    printf("\n");
+#endif
+
         GYRO_CS_HIGH();
         break;
     
@@ -75,7 +100,7 @@ int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t*
         break;
     }
 
-    
+    return HAL_OK;
 }
 
 
