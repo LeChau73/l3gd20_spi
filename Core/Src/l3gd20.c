@@ -112,7 +112,7 @@ uint8_t read1byte_l3gd20(uint8_t register_add) {
     cmd[0] |= 0x80; // READMODE , BIT 7 = 1
 
     // Address of register
-    cmd[0] |= (register_add & 0x3F);
+    cmd[0] |= (register_add & 0x3F);                                                                                                                                                                                                                                                                                                       
 
     // pull CS
     GYRO_CS_LOW();
@@ -153,16 +153,19 @@ HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t 
 
 
     length_to_Send = ( mode == SINGLE_MODE ) ? 2 : ( size + 1 );
-    
+    GYRO_CS_LOW();
     for (size_t i = 0; i < length_to_Send; i++)
     {
-        if (spi_write(buffer, 1, 1000) == ERROR)
+
+        if (spi_write(&buffer[i], 1, 100) == ERROR)
         {
             printf("Cannot pheripheral spi write \n");
+            GYRO_CS_HIGH();
             return HAL_BUSY;
         }
-        
-    }
+        //HAL_Delay(100); //=> why is here i should wait 100ms?
 
+    }
+    GYRO_CS_HIGH();
     HAL_OK;
 }

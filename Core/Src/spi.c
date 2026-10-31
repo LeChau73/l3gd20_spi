@@ -26,6 +26,8 @@ int spi_write(uint8_t* data, uint16_t size,  uint16_t timeout) {
         hspi1.Instance->DR = *data++;
     }
 
+    while( hspi1.Instance->SR & ( 0x1 << 7 ) ); //Wait until BUSY bit == 0
+
     return OK;
 }
 

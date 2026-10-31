@@ -37,7 +37,8 @@ void TC_Write_Single_mode_CTRL_REG3_22H(void) {
   // Step1: Read register 22h
   // Write 
   // Read again to confirm
-  printf("Gyro CTRL_REG3 = %x\n", read1byte_l3gd20(0x22));
-
+  printf("%s = 0x%x\n", l3gd20_find_name(L3GD20_REG_CTRL_REG3), read1byte_l3gd20(L3GD20_REG_CTRL_REG3));
+  write_l3gd20(L3GD20_REG_CTRL_REG3, SINGLE_MODE, 1,(uint16_t[]){0x80}); //C99 Upper
+  printf("%s = 0x%x\n", l3gd20_find_name(L3GD20_REG_CTRL_REG3), read1byte_l3gd20(L3GD20_REG_CTRL_REG3));
 
 }
