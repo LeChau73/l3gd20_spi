@@ -16,8 +16,8 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart2;
 
 /* Macro điều khiển chân Chip Select (CS) của Gyro onboard (PE3) */
-
-
+#define TEST 1
+ 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -33,29 +33,6 @@ void UART_PrintHex(uint8_t num);
 uint8_t flag_exti0 = 0;
 volatile uint16_t exti_pin = 0;
 uint8_t  flag_exti = 0;
-
-uint8_t Gyro_ReadRegister(uint8_t reg)
-{
-  uint8_t txData[2];
-  uint8_t rxData[2] = {0, 0};
-
-  /* 
-   * Cấu hình byte lệnh:
-   * - Bit 7 = 1: Lệnh READ
-   * - Bit 6 = 0: Không tự động tăng địa chỉ (Single byte)
-   */
-  txData[0] = reg | 0x80; 
-  txData[1] = 0xFF; // Dummy byte gửi đi để tạo xung Clock nhận dữ liệu về
-
-  GYRO_CS_LOW();
-  
-  // Gửi 2 bytes và nhận đồng thời 2 bytes qua SPI
-  HAL_SPI_TransmitReceive(&hspi1, txData, rxData, 2, HAL_MAX_DELAY);
-  
-  GYRO_CS_HIGH();
-
-  return rxData[1]; // Byte thứ 2 là dữ liệu cảm biến phản hồi
-}
 
 void EXTI0_IRQHandler(void) {
 
@@ -154,15 +131,16 @@ int main(void)
   printf("End Systick = %d\n", HAL_GetTick());
 
 
-  //TODO: In ra tan so hien tai, va delay
   UART_PrintStr("\r\n==================================\r\n");
   UART_PrintStr("  STM32F411 DISCOVERY SPI TEST    \r\n");
   UART_PrintStr("==================================\r\n");
 
-
+#if(TEST)
   Read_Gyro_WHO_AM_I();
   TC_Write_Single_mode_CTRL_REG3_22H();
-
+  TC_Write_Mul_Mode_CTRL_REG1_20H_21H();
+  TC_Read_Mul_Mode_CTRL_REG1_20H_21H();
+#endif
   /* Vòng lặp chính */
   int count = 10U;
   while (1)
@@ -222,7 +200,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
 
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16; // Baudrate ~1MHz
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8; // Baudrate ~2MHz
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

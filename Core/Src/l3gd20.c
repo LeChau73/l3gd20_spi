@@ -35,7 +35,7 @@ int config_l3gd20(ty_l3gd20* l3gd20) {
 
 
 /* Describle : read data from sensor */
-int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t* buff_data) {
+int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t number_byte_wanted_read, uint8_t* buff_data) {
 
     uint8_t Timeout = 100; //100ms
     uint8_t number_byte_send;
@@ -57,7 +57,7 @@ int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t*
     // Address of register
     cmd[0] |= (register_add & 0x3F);
 
-    number_byte_send = (read_mode == MUTILPLE_MODE ) ? 2 : 1;
+    number_byte_send = (read_mode == MUTILPLE_MODE ) ? number_byte_wanted_read : 1;
 
     switch (config.protocol)
     {
@@ -86,7 +86,6 @@ int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t*
         buff_data[i] = '\0'; 
 
 #if(DEBUG_L3GD20)
-    //TODO: DEBUG tai sao k break dduwocj line printf
     printf("File l3gd20.c, func: Result read from [%s] = ", find_name_reister( table_l3gd20_register, register_add ));
     fflush(stdout);
     UART_PrintHexMutilple(buff_data, number_byte_send);
@@ -133,7 +132,7 @@ uint8_t read1byte_l3gd20(uint8_t register_add) {
 }
 
 
-HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t size, uint16_t* data_write) {
+HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t size, uint8_t* data_write) {
 
     /* [1 byte : medata] + [ data ] */
     /* Note: Data of user should be MSB first */
@@ -167,5 +166,5 @@ HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t 
 
     }
     GYRO_CS_HIGH();
-    HAL_OK;
+    return HAL_OK;
 }

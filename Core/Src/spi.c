@@ -70,6 +70,7 @@ int spi_read(uint8_t* buff_data, uint16_t size, uint16_t timeout) {
         index++;
     }
 
+    while( hspi1.Instance->SR & ( 0x1 << 7 ) ); //Wait until BUSY bit == 0
 #if(DEBUG_SPI)
     printf("File spi.c, func: spi_read :Result read data = ");
     for (int i = 0; i < index; i++)

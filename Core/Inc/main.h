@@ -65,6 +65,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 void Read_Gyro_WHO_AM_I();
 void TC_Write_Single_mode_CTRL_REG3_22H(void);
+void TC_Write_Mul_Mode_CTRL_REG1_20H_21H(void);
+void TC_Read_Mul_Mode_CTRL_REG1_20H_21H(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

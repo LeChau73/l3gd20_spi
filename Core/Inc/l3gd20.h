@@ -137,7 +137,7 @@ static inline char* find_name_reister ( const ty_table_l3gd20_register* table , 
 
 int config_l3gd20(ty_l3gd20* l3gd20);
 static inline char* find_name_reister ( const ty_table_l3gd20_register* table , const l3gd20_reg_t addr_nb );
-HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t size, uint16_t* data_write);
+HAL_StatusTypeDef write_l3gd20(uint8_t address_register, uint8_t mode, uint16_t size, uint8_t* data_write);
 int read_l3gd20(uint8_t register_add, uint8_t read_mode, uint16_t size, uint8_t* buff_data);
 uint8_t read1byte_l3gd20(uint8_t register_add);
 
