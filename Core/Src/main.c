@@ -82,10 +82,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void DMA2_Stream2_IRQHandler(void) {
   //TODO: Clear ddang sai
   UART_PrintStr("\r\n=======DMA2_Stream2_IRQHandler Complete=======\r\n");
-  SET_BIT(DMA2->LISR, DMA_LIFCR_CTCIF2);
-  SET_BIT(DMA2->LISR, DMA_LIFCR_CHTIF2);
-  CLEAR_BIT(hspi1.Instance->CR2, SPI_CR2_TXDMAEN);
-  HAL_NVIC_ClearPendingIRQ(DMA2_Stream2_IRQn);
+  SET_BIT(DMA2->LIFCR, DMA_LIFCR_CTCIF2);
+  SET_BIT(DMA2->LIFCR, DMA_LIFCR_CHTIF2);
+  //HAL_NVIC_ClearPendingIRQ(DMA2_Stream2_IRQn);
 }
 
 
