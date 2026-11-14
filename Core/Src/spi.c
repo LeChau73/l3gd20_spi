@@ -2,7 +2,7 @@
 
 
 extern SPI_HandleTypeDef hspi1;
-
+extern DMA_HandleTypeDef dma1_spi_trans;
 
 int spi_write(uint8_t* data, uint16_t size,  uint16_t timeout) {
 #if(DEBUG_SPI)
@@ -82,4 +82,23 @@ int spi_read(uint8_t* buff_data, uint16_t size, uint16_t timeout) {
 #endif
 
     return OK;
+}
+
+
+HAL_StatusTypeDef spi_write_dma(uint8_t* data, uint16_t length) {
+
+
+    if(dma1_spi_trans.State != HAL_DMA_STATE_READY) {
+        return HAL_BUSY;
+    }
+
+    /* Set lenght and source ,destination */
+    dma1_spi_trans.Instance->NDTR = length;
+    dma1_spi_trans.Instance->M0AR = (uint32_t)data; //address of first element
+    dma1_spi_trans.Instance->PAR = (uint32_t)&hspi1.Instance->DR;
+
+    dma1_spi_trans.Instance->CR |= DMA_SxCR_EN | DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
+
+    /* Triggle dma */
+    hspi1.Instance->CR2 |= SPI_CR2_TXDMAEN;
 }

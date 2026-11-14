@@ -14,6 +14,26 @@
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef dma1_spi_trans;
+
+
+/* Hàng = Channel, cột = Stream */
+const pheripheral_name maxtrix_dma2[CHANNEL][STREAM] = {
+    /* Stream:   0                 1                 2                 3                 4                 5                 6                                                        7 */
+    /* Ch0 */ { DMA_REQ_ADC1,      DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_ADC1,     DMA_REQ_NONE,     DMA_REQ_TIM1_CH1 | DMA_REQ_TIM1_CH2 | DMA_REQ_TIM1_CH3,  DMA_REQ_NONE },
+    /* Ch1 */ { DMA_REQ_NONE,      DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,                                            DMA_REQ_NONE },
+    /* Ch2 */ { DMA_REQ_NONE,      DMA_REQ_NONE,     DMA_REQ_SPI1_TX,  DMA_REQ_SPI5_RX,  DMA_REQ_SPI5_TX,  DMA_REQ_NONE,     DMA_REQ_NONE,                                            DMA_REQ_NONE },
+    /* Ch3 */ { DMA_REQ_SPI1_RX,   DMA_REQ_NONE,     DMA_REQ_SPI1_RX,  DMA_REQ_SPI1_TX,  DMA_REQ_NONE,     DMA_REQ_SPI1_TX,  DMA_REQ_NONE,                                            DMA_REQ_NONE },
+    /* Ch4 */ { DMA_REQ_SPI4_RX,   DMA_REQ_SPI4_TX,  DMA_REQ_USART1_RX,DMA_REQ_SDIO,     DMA_REQ_SPI4_RX,  DMA_REQ_USART1_RX,DMA_REQ_SDIO,                                            DMA_REQ_USART1_TX },
+    /* Ch5 */ { DMA_REQ_NONE,      DMA_REQ_USART6_RX,DMA_REQ_USART6_RX,DMA_REQ_SPI4_RX,  DMA_REQ_SPI4_TX,  DMA_REQ_SPI5_TX,  DMA_REQ_USART6_TX,                                       DMA_REQ_USART6_TX },
+    /* Ch6 */ { DMA_REQ_TIM1_TRIG, DMA_REQ_TIM1_CH1, DMA_REQ_TIM1_CH2, DMA_REQ_TIM1_CH1, DMA_REQ_TIM1_CH4 | DMA_REQ_TIM1_TRIG | DMA_REQ_TIM1_COM, DMA_REQ_TIM1_UP, DMA_REQ_TIM1_CH3,   DMA_REQ_NONE },
+    /* Ch7 */ { DMA_REQ_NONE,      DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_NONE,     DMA_REQ_SPI5_RX,  DMA_REQ_SPI5_TX,                                         DMA_REQ_NONE },
+};
+
+DMA_Stream_TypeDef * const lk_str_dma2[STREAM] = {
+    DMA2_Stream0, DMA2_Stream1, DMA2_Stream2, DMA2_Stream3,
+    DMA2_Stream4, DMA2_Stream5, DMA2_Stream6, DMA2_Stream7,
+};
 
 /* Macro điều khiển chân Chip Select (CS) của Gyro onboard (PE3) */
 #define TEST 1
@@ -27,6 +47,7 @@ static void MX_USART2_UART_Init(void);
 void UART_PrintChar(char c);
 void UART_PrintStr(const char *str);
 void UART_PrintHex(uint8_t num);
+lk_stream_and_channel dma2_find(const pheripheral_name name);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -58,6 +79,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 }
 
+void DMA2_Stream2_IRQHandler(void) {
+  //TODO: Clear ddang sai
+  UART_PrintStr("\r\n=======DMA2_Stream2_IRQHandler Complete=======\r\n");
+  SET_BIT(DMA2->LISR, DMA_LIFCR_CTCIF2);
+  SET_BIT(DMA2->LISR, DMA_LIFCR_CHTIF2);
+  CLEAR_BIT(hspi1.Instance->CR2, SPI_CR2_TXDMAEN);
+  HAL_NVIC_ClearPendingIRQ(DMA2_Stream2_IRQn);
+}
+
 
 void Init_EXTI0_ButtonUser(void) {
   GPIO_InitTypeDef gpio = {0};
@@ -70,6 +100,23 @@ void Init_EXTI0_ButtonUser(void) {
 
   HAL_NVIC_SetPriority(EXTI0_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+}
+
+
+inline lk_stream_and_channel dma2_find(const pheripheral_name name) {
+    lk_stream_and_channel kq = { NULL, 0, 0};
+    for(uint8_t x = 0; x < CHANNEL ; x++) {
+      for (uint8_t i = 0; i < STREAM; i++)
+      {
+          if(maxtrix_dma2[x][i] == name){
+              kq.channel = x;
+              kq.stream = lk_str_dma2[i];
+              kq.stream_index  = i;
+          }
+      }
+      
+    }
+    return kq;
 }
 
 
@@ -103,6 +150,17 @@ static void DumpClockSystemAndSyTick() {
   }
 }
 
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  printf("Complete SPI tran\n");
+
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(hspi);
+
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_SPI_TxCpltCallback should be implemented in the user file
+   */
+}
 
 
 /**
@@ -117,6 +175,9 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_USART2_UART_Init();
+
+  ConfigDMA2_SPI1_Init();
+
   HAL_Delay(200);
   Init_EXTI0_ButtonUser();
   UART_PrintStr("\033[2J\033[H"); // Clear terminal
@@ -141,6 +202,17 @@ int main(void)
   TC_Write_Mul_Mode_CTRL_REG1_20H_21H();
   TC_Read_Mul_Mode_CTRL_REG1_20H_21H();
 #endif
+
+  uint8_t data[100] = {0};
+  for (int i = 0 ; i < 100 ; i++) {
+    data[i] = i;
+  }
+
+  spi_write_dma(data, 100);
+
+
+
+
   /* Vòng lặp chính */
   int count = 10U;
   while (1)
@@ -149,6 +221,51 @@ int main(void)
 
   }
 }
+
+
+
+
+void ConfigDMA2_SPI1_Init(void)
+{
+  __HAL_RCC_DMA2_CLK_ENABLE();
+  /* Because I use SPI1_TX so that I need to config Stream */
+  DMA_InitTypeDef config_dma;
+
+  lk_stream_and_channel str_channel;
+
+  str_channel = dma2_find(DMA_REQ_SPI1_TX);
+
+  if(str_channel.stream == NULL && str_channel.channel == 0 && str_channel.stream == 0){
+    printf("Cannot find stream and channel when look up !!!!!!! LINE = %d\n ", __LINE__);
+    return;
+  }
+
+  config_dma.Channel = DMA_CHANNEL_2;
+  config_dma.Direction = DMA_MEMORY_TO_PERIPH;
+  config_dma.PeriphInc = DMA_PINC_DISABLE;
+  config_dma.MemInc = DMA_MINC_ENABLE;
+  config_dma.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  config_dma.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  config_dma.Mode = DMA_NORMAL;
+  config_dma.Priority = DMA_PRIORITY_MEDIUM;
+  config_dma.FIFOMode = DMA_FIFOMODE_DISABLE;
+  //config_dma.PeriphBurst = 
+  //config_dma.FIFOThreshold = 
+
+  dma1_spi_trans.Instance = DMA2_Stream2;
+  dma1_spi_trans.Init = config_dma;
+  dma1_spi_trans.Lock = HAL_UNLOCKED;
+                                    /* Comment doan nay */
+  dma1_spi_trans.StreamBaseAddress = DMA2_Stream2_BASE;
+  dma1_spi_trans.StreamIndex = 2;
+  //dma1_spi_trans.XferCpltCallback = 
+  HAL_DMA_Init(&dma1_spi_trans);
+  
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+}
+
+
 
 /**
   * @brief System Clock Configuration (HSI 16MHz)

@@ -12,7 +12,7 @@
 //SPI
 int spi_write(uint8_t* data, uint16_t size,  uint16_t timeout);
 int spi_read(uint8_t* buff_data, uint16_t size, uint16_t timeout);
-
+HAL_StatusTypeDef spi_write_dma(uint8_t* data, uint16_t length);
 
 
 
